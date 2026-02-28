@@ -277,10 +277,4 @@ void Chip8::cycle() {
         std::cerr << "Unknown opcode: 0x" << std::hex << opcode << "\n";
         break;
     }
-
-    // --- TIMERS ---
-    if (delay_timer > 0)
-        delay_timer--;
-    if (sound_timer > 0)
-        sound_timer--;
 }

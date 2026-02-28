@@ -26,6 +26,17 @@ static const uint8_t KEY_MAP[16] = {
     SDL_SCANCODE_V  // F
 };
 
+// Audio state passed to the callback
+struct AudioState {
+    float frequency = 440.0f; // Hz — concert A, classic beep pitch
+    float volume = 0.3f;      // 0.0 to 1.0
+    float phase = 0.0f;       // current position in the wave
+    bool playing = false;
+    int sample_rate = 44100;
+};
+
+static AudioState audio_state;
+
 Display::Display(int scale) : scale(scale) {}
 
 Display::~Display() {
@@ -66,7 +77,51 @@ bool Display::init() {
         return false;
     }
 
+    // --- Audio ---
+    SDL_AudioSpec want{};
+    want.freq = audio_state.sample_rate;
+    want.format = AUDIO_F32; // 32-bit float samples
+    want.channels = 1;       // mono
+    want.samples = 512;      // buffer size
+    want.callback = audioCallback;
+    want.userdata = &audio_state;
+
+    audio_device = SDL_OpenAudioDevice(nullptr, 0, &want, nullptr, 0);
+    if (!audio_device) {
+        std::cerr << "SDL_OpenAudioDevice failed: " << SDL_GetError() << "\n";
+        return false;
+    }
+
+    // Start audio device (begins calling our callback)
+    SDL_PauseAudioDevice(audio_device, 0);
+
     return true;
+}
+
+// This runs on a separate audio thread — SDL calls it whenever
+// it needs more audio samples to play
+void Display::audioCallback(void* userdata, uint8_t* stream, int len) {
+    AudioState* state = (AudioState*)userdata;
+    float* output = (float*)stream;
+    int num_samples = len / sizeof(float);
+
+    for (int i = 0; i < num_samples; i++) {
+        if (state->playing) {
+            // Generate a simple sine wave
+            output[i] = state->volume * std::sin(2.0f * M_PI * state->frequency * state->phase /
+                                                 state->sample_rate);
+            state->phase += 1.0f;
+        } else {
+            output[i] = 0.0f; // silence
+            state->phase = 0.0f;
+        }
+    }
+}
+
+void Display::playBeep(bool play) {
+    SDL_LockAudioDevice(audio_device);
+    audio_state.playing = play;
+    SDL_UnlockAudioDevice(audio_device);
 }
 
 void Display::render(const uint8_t* pixels) {
