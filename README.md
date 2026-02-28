@@ -55,4 +55,4 @@ Free test ROMs available at [here](https://github.com/kripod/chip8-roms) and [he
 - C++20
 - CMake
 - SDL2
--       Catch2
+- Catch2
