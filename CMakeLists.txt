@@ -3,14 +3,23 @@ project(Chip8Emulator)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+find_package(Catch2 CONFIG REQUIRED)
 
 find_package(SDL2 CONFIG REQUIRED)
 
+# Main emulator
 add_executable(chip8
     src/main.cpp
+    src/chip8.cpp)
+
+target_include_directories(chip8 PRIVATE include)
+target_link_libraries(chip8 PRIVATE SDL2::SDL2 SDL2::SDL2main)
+
+# Tests
+add_executable(chip8_tests
+    tests/test_opcodes.cpp
     src/chip8.cpp
 )
 
-target_include_directories(chip8 PRIVATE include)
-
-target_link_libraries(chip8 PRIVATE SDL2::SDL2 SDL2::SDL2main)
+target_include_directories(chip8_tests PRIVATE include)
+target_link_libraries(chip8_tests PRIVATE Catch2::Catch2WithMain)
